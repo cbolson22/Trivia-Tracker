@@ -6,20 +6,20 @@ A mobile-first web app for groups of friends to log trivia questions and fun fac
 
 ## Concept
 
-At a quiz night, your team hears a great fact you want to remember. Trivia Tracker lets you capture it on your phone in seconds — question, answer (blurred until tapped), category, and the venue you heard it at. Over time your group builds a personal trivia feed and a map of every pub, bar, and café you've competed in, with a visit count badge on each pin.
+At a quiz night, your team hears a great fact you want to remember. Trivia Tracker lets you capture it on your phone in seconds — question, answer (blurred until tapped), category, and the venue you heard it at. Over time your group builds a personal trivia feed and a map of every pub, bar, and café you've competed in.
 
 ---
 
 ## Tech Stack
 
-| Layer | Choice |
-|---|---|
-| Framework | Next.js (App Router) + TypeScript |
-| Styling | Tailwind CSS |
-| Backend / DB / Auth | Supabase (Postgres + PostGIS + Auth + RLS) |
-| Map | MapLibre GL JS via `react-map-gl`, globe projection |
-| Hosting | Vercel |
-| PWA | Installable, offline-capable via service worker |
+| Layer               | Choice                                              |
+| ------------------- | --------------------------------------------------- |
+| Framework           | Next.js (App Router) + TypeScript                   |
+| Styling             | Tailwind CSS                                        |
+| Backend / DB / Auth | Supabase (Postgres + PostGIS + Auth + RLS)          |
+| Map                 | MapLibre GL JS via `react-map-gl`, globe projection |
+| Hosting             | Vercel                                              |
+| PWA                 | Installable, offline-capable via service worker     |
 
 ---
 
@@ -28,7 +28,6 @@ At a quiz night, your team hears a great fact you want to remember. Trivia Track
 - **Standalone entries allowed** — a fact can be logged without a venue; `entries.venue_id` is nullable.
 - **Multi-group membership** — a user can belong to more than one group.
 - **Invite-only groups** — groups are joined via a shareable invite code; they are not publicly discoverable.
-- **Group-level visit tracking** — visit counts reflect the group as a whole, not individuals.
 - **Mobile-first** — designed for logging on a phone at a bar; desktop layout is a secondary concern.
 - **Auth** — Supabase email/password authentication.
 
@@ -39,60 +38,51 @@ At a quiz night, your team hears a great fact you want to remember. Trivia Track
 > Enable the PostGIS extension in Supabase before running migrations.
 
 ### `groups`
-| Column | Type | Notes |
-|---|---|---|
-| `id` | `uuid` PK | |
-| `name` | `text` | |
-| `invite_code` | `text` UNIQUE | Generated on creation |
-| `created_by` | `uuid` FK → `auth.users` | |
-| `created_at` | `timestamptz` | |
+
+| Column        | Type                     | Notes                 |
+| ------------- | ------------------------ | --------------------- |
+| `id`          | `uuid` PK                |                       |
+| `name`        | `text`                   |                       |
+| `invite_code` | `text` UNIQUE            | Generated on creation |
+| `created_by`  | `uuid` FK → `auth.users` |                       |
+| `created_at`  | `timestamptz`            |                       |
 
 ### `memberships`
-| Column | Type | Notes |
-|---|---|---|
-| `group_id` | `uuid` FK → `groups` | |
-| `user_id` | `uuid` FK → `auth.users` | |
-| `role` | `text` | `owner` or `member` |
-| `joined_at` | `timestamptz` | |
+
+| Column      | Type                     | Notes               |
+| ----------- | ------------------------ | ------------------- |
+| `group_id`  | `uuid` FK → `groups`     |                     |
+| `user_id`   | `uuid` FK → `auth.users` |                     |
+| `role`      | `text`                   | `owner` or `member` |
+| `joined_at` | `timestamptz`            |                     |
 
 All RLS policies key off this table.
 
 ### `venues`
-| Column | Type | Notes |
-|---|---|---|
-| `id` | `uuid` PK | |
-| `group_id` | `uuid` FK → `groups` | |
-| `name` | `text` | |
-| `location` | `geography(Point, 4326)` | PostGIS |
-| `address` | `text` | Optional |
-| `created_at` | `timestamptz` | |
 
-### `visits`
-| Column | Type | Notes |
-|---|---|---|
-| `id` | `uuid` PK | |
-| `venue_id` | `uuid` FK → `venues` | |
-| `group_id` | `uuid` FK → `groups` | |
-| `visited_on` | `date` | |
-| `score` | `int` | Optional |
-| `attendee_count` | `int` | Optional |
-| `created_at` | `timestamptz` | |
-
-Map marker badge = `COUNT(visits)` per venue.
+| Column       | Type                     | Notes    |
+| ------------ | ------------------------ | -------- |
+| `id`         | `uuid` PK                |          |
+| `group_id`   | `uuid` FK → `groups`     |          |
+| `name`       | `text`                   |          |
+| `location`   | `geography(Point, 4326)` | PostGIS  |
+| `address`    | `text`                   | Optional |
+| `created_at` | `timestamptz`            |          |
 
 ### `entries`
-| Column | Type | Notes |
-|---|---|---|
-| `id` | `uuid` PK | |
-| `group_id` | `uuid` FK → `groups` | |
-| `author_id` | `uuid` FK → `auth.users` | |
-| `question` | `text` | |
-| `answer` | `text` | Blurred in UI until tapped |
-| `category` | `text` | Optional tag |
-| `source` | `text` | e.g. "Tuesday quiz at The Anchor" |
-| `heard_on` | `date` | |
-| `venue_id` | `uuid` FK → `venues` | Nullable |
-| `created_at` | `timestamptz` | |
+
+| Column       | Type                     | Notes                             |
+| ------------ | ------------------------ | --------------------------------- |
+| `id`         | `uuid` PK                |                                   |
+| `group_id`   | `uuid` FK → `groups`     |                                   |
+| `author_id`  | `uuid` FK → `auth.users` |                                   |
+| `question`   | `text`                   |                                   |
+| `answer`     | `text`                   | Blurred in UI until tapped        |
+| `category`   | `text`                   | Optional tag                      |
+| `source`     | `text`                   | e.g. "Tuesday quiz at The Anchor" |
+| `heard_on`   | `date`                   |                                   |
+| `venue_id`   | `uuid` FK → `venues`     | Nullable                          |
+| `created_at` | `timestamptz`            |                                   |
 
 ---
 
@@ -114,8 +104,8 @@ All tables enforce RLS. Write and test policies before touching the frontend —
 
 - `react-map-gl` with the MapLibre GL JS binding; globe projection enabled (flattens on zoom).
 - Venue coordinates stored as PostGIS `geography`; use `ST_` functions for distance queries.
-- Markers show a visit-count badge; cluster at low zoom levels.
-- Tapping a marker opens a venue detail sheet: visit history, linked facts, "Log a visit" button.
+- Markers cluster at low zoom levels.
+- Tapping a marker opens a venue detail sheet: linked entries and an "Add entry" shortcut.
 - `react-globe.gl` (three.js) is noted as a potential stylized landing-page globe — not the working map.
 
 ---
@@ -123,18 +113,21 @@ All tables enforce RLS. Write and test policies before touching the frontend —
 ## Build Order
 
 ### Phase 1 — Project + Auth
+
 - Scaffold Next.js app with Tailwind, TypeScript, and App Router.
 - Configure Supabase client (`@supabase/ssr`).
 - Implement Supabase email/password auth with protected routes and session middleware.
 - Deploy skeleton to Vercel; confirm CI/CD pipeline.
 
 ### Phase 2 — Groups + Membership (do RLS here)
+
 - `groups` and `memberships` schema + migrations.
 - Create group flow (owner gets membership via DB trigger).
 - Invite code generation and join-by-code flow.
 - Write all RLS policies; test with multiple users before proceeding.
 
 ### Phase 3 — Entries (Trivia Feed)
+
 - `entries` schema + migrations.
 - Add/edit entry form (mobile-optimized).
 - Feed view: list entries for the active group, filterable by category.
@@ -142,20 +135,16 @@ All tables enforce RLS. Write and test policies before touching the frontend —
 - Search across question and answer text.
 
 ### Phase 4 — Venues + Map
+
 - Enable PostGIS extension in Supabase.
 - `venues` schema + migrations.
 - Venue CRUD (create, edit, list).
 - Integrate MapLibre GL JS via `react-map-gl`; enable globe projection.
-- Render venue markers with visit-count badges; implement clustering.
-- Venue detail sheet on marker tap.
+- Render venue markers; implement clustering.
+- Venue detail sheet on marker tap (linked entries, add entry shortcut).
 
-### Phase 5 — Visits
-- `visits` schema + migrations.
-- "Log a visit" flow from venue detail sheet (date, optional score and attendee count).
-- Update marker badges from live visit counts.
-- Visit history list within each venue detail view.
+### Phase 5 — PWA Polish
 
-### Phase 6 — PWA Polish
 - `manifest.json` with app name, icons, theme color.
 - Service worker (via `next-pwa` or manual Workbox) for offline shell.
 - Install prompt handling.
@@ -165,10 +154,9 @@ All tables enforce RLS. Write and test policies before touching the frontend —
 
 ## Post-MVP Backlog
 
-- **Leaderboard** — per-group stats: facts contributed, nights attended.
-- **Streaks** — consecutive weeks attending trivia.
-- **Quiz Night bundling** — link a date + venue + score + the facts logged that night into a single event.
-- **Shareable recap card** — "Team Quokka: 8 venues, 41 nights, 210 facts" — shareable image for social/growth loop.
+- **Leaderboard** — per-group stats: facts contributed per member.
+- **Quiz Night bundling** — link a date + venue + the entries logged that night into a single event.
+- **Shareable recap card** — "Team Quokka: 8 venues, 210 facts" — shareable image for social/growth loop.
 - **Difficulty ratings** — mark entries easy / medium / hard.
 - **Recurring night reminders** — push notifications for scheduled trivia nights.
 
@@ -204,8 +192,8 @@ npm run dev
 
 ## Environment Variables
 
-| Variable | Description |
-|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | Your Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon/public key |
-| `SUPABASE_SERVICE_ROLE_KEY` | Service role key (server-only, never exposed to client) |
+| Variable                        | Description                                             |
+| ------------------------------- | ------------------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`      | Your Supabase project URL                               |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon/public key                                |
+| `SUPABASE_SERVICE_ROLE_KEY`     | Service role key (server-only, never exposed to client) |
