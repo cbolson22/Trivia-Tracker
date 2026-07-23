@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function DashboardPage() {
@@ -13,6 +14,12 @@ export default async function DashboardPage() {
     <main className="flex min-h-screen flex-col items-center justify-center px-4">
       <h1 className="text-2xl font-bold text-gray-900">Welcome to Trivia Tracker</h1>
       <p className="mt-2 text-sm text-gray-500">{user.email}</p>
+      <Link
+        href="/groups"
+        className="mt-6 rounded-lg bg-indigo-600 px-4 py-3 text-base font-semibold text-white hover:bg-indigo-700"
+      >
+        View your groups
+      </Link>
       <form action="/auth/signout" method="post" className="mt-8">
         <button
           type="submit"
