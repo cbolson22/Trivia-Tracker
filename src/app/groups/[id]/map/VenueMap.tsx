@@ -153,7 +153,11 @@ export function VenueMap({ groupId, venues }: { groupId: string; venues: MapVenu
               )}
               <div className="mt-1 flex gap-3">
                 <a
-                  href={getGoogleMapsUrl(selectedVenue.latitude, selectedVenue.longitude)}
+                  href={getGoogleMapsUrl(
+                    selectedVenue.address,
+                    selectedVenue.latitude,
+                    selectedVenue.longitude
+                  )}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-xs font-medium text-indigo-600 hover:text-indigo-500"

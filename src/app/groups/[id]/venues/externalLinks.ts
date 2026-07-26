@@ -1,10 +1,16 @@
 // Zero-setup external links — built from data we already store, no API key needed.
-// Google Maps' search-by-coordinates URL scheme gives an exact pin; Yelp has
-// no coordinate-based search, so its link is a pre-filled name/address search
+// Google Maps searches the stored address text (falling back to coordinates
+// only if no address was entered, since address is optional); Yelp has no
+// coordinate-based search, so its link is a pre-filled name/address search
 // rather than a guaranteed exact match.
 
-export function getGoogleMapsUrl(latitude: number, longitude: number): string {
-  return `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`;
+export function getGoogleMapsUrl(
+  address: string | null,
+  latitude: number,
+  longitude: number
+): string {
+  const query = address ?? `${latitude},${longitude}`;
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
 }
 
 export function getYelpSearchUrl(name: string, address: string | null): string {

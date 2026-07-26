@@ -69,7 +69,7 @@ export function VenueList({ groupId, venues }: { groupId: string; venues: Venue[
 
             <div className="mt-2 flex gap-3 text-xs">
               <a
-                href={getGoogleMapsUrl(venue.latitude, venue.longitude)}
+                href={getGoogleMapsUrl(venue.address, venue.latitude, venue.longitude)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="font-medium text-indigo-600 hover:text-indigo-500"
