@@ -1,12 +1,20 @@
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { EditPermissionToggle } from "./EditPermissionToggle";
 
 type GroupMember = {
   user_id: string;
   email: string;
   role: string;
   joined_at: string;
+};
+
+type GroupDetail = {
+  id: string;
+  name: string;
+  invite_code: string;
+  allow_member_edits: boolean;
 };
 
 export default async function GroupDetailPage({
@@ -24,11 +32,22 @@ export default async function GroupDetailPage({
 
   const { data: group } = await supabase
     .from("groups")
-    .select("id, name, invite_code")
+    .select("id, name, invite_code, allow_member_edits")
     .eq("id", id)
     .single();
 
   if (!group) notFound();
+
+  const typedGroup = group as GroupDetail;
+
+  const { data: membership } = await supabase
+    .from("memberships")
+    .select("role")
+    .eq("group_id", id)
+    .eq("user_id", user.id)
+    .single();
+
+  const isOwner = (membership as { role: string } | null)?.role === "owner";
 
   const { data: members } = await supabase.rpc("list_group_members", {
     p_group_id: id,
@@ -46,6 +65,23 @@ export default async function GroupDetailPage({
           <p className="mt-1 font-mono text-xl tracking-widest text-gray-900">
             {group.invite_code}
           </p>
+        </div>
+
+        <Link
+          href={`/groups/${id}/entries`}
+          className="mt-6 block w-full rounded-lg bg-indigo-600 px-4 py-3 text-center text-base font-semibold text-white hover:bg-indigo-700"
+        >
+          View trivia feed
+        </Link>
+
+        <div className="mt-6">
+          {isOwner ? (
+            <EditPermissionToggle groupId={id} initialValue={typedGroup.allow_member_edits} />
+          ) : (
+            <p className="text-sm text-gray-500">
+              Member edits: {typedGroup.allow_member_edits ? "Allowed" : "Not allowed"}
+            </p>
+          )}
         </div>
 
         <h2 className="mt-8 text-sm font-medium text-gray-700">Members</h2>
