@@ -74,6 +74,20 @@ export default async function GroupDetailPage({
           View trivia feed
         </Link>
 
+        <Link
+          href={`/groups/${id}/venues`}
+          className="mt-3 block w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-center text-base font-semibold text-gray-700 hover:bg-gray-50"
+        >
+          Venues
+        </Link>
+
+        <Link
+          href={`/groups/${id}/map`}
+          className="mt-3 block w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-center text-base font-semibold text-gray-700 hover:bg-gray-50"
+        >
+          Map
+        </Link>
+
         <div className="mt-6">
           {isOwner ? (
             <EditPermissionToggle groupId={id} initialValue={typedGroup.allow_member_edits} />
