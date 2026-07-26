@@ -12,18 +12,20 @@ export default async function DashboardPage() {
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center px-4">
-      <h1 className="text-2xl font-bold text-gray-900">Welcome to Trivia Tracker</h1>
+      <h1 className="text-2xl font-bold text-gray-900">Trivia Tracker</h1>
       <p className="mt-2 text-sm text-gray-500">{user.email}</p>
+
       <Link
         href="/groups"
-        className="mt-6 rounded-lg bg-indigo-600 px-4 py-3 text-base font-semibold text-white hover:bg-indigo-700"
+        className="mt-8 w-full max-w-xs rounded-lg bg-indigo-600 px-4 py-3 text-center text-base font-semibold text-white hover:bg-indigo-700"
       >
-        View your groups
+        Your groups
       </Link>
-      <form action="/auth/signout" method="post" className="mt-8">
+
+      <form action="/auth/signout" method="post" className="mt-4 w-full max-w-xs">
         <button
           type="submit"
-          className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+          className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
         >
           Sign out
         </button>
