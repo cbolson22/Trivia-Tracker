@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { getGoogleMapsUrl, getYelpSearchUrl } from "./externalLinks";
 import type { Venue } from "./page";
 
 export function VenueList({ groupId, venues }: { groupId: string; venues: Venue[] }) {
@@ -65,6 +66,25 @@ export function VenueList({ groupId, venues }: { groupId: string; venues: Venue[
           <li key={venue.id} className="rounded-lg border border-gray-300 bg-white px-4 py-3">
             <p className="font-medium text-gray-900">{venue.name}</p>
             {venue.address && <p className="mt-1 text-sm text-gray-500">{venue.address}</p>}
+
+            <div className="mt-2 flex gap-3 text-xs">
+              <a
+                href={getGoogleMapsUrl(venue.latitude, venue.longitude)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-indigo-600 hover:text-indigo-500"
+              >
+                Google Maps
+              </a>
+              <a
+                href={getYelpSearchUrl(venue.name, venue.address)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-indigo-600 hover:text-indigo-500"
+              >
+                Yelp
+              </a>
+            </div>
 
             <div className="mt-3 flex gap-3 text-sm">
               <Link

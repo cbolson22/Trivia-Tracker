@@ -12,6 +12,7 @@ const MAP_STYLE_URL =
 
 export type VenueLocationPickerHandle = {
   getCenter: () => { longitude: number; latitude: number };
+  flyTo: (longitude: number, latitude: number) => void;
 };
 
 export const VenueLocationPicker = forwardRef<
@@ -30,6 +31,9 @@ export const VenueLocationPicker = forwardRef<
             longitude: initialLongitude ?? DEFAULT_CENTER.longitude,
             latitude: initialLatitude ?? DEFAULT_CENTER.latitude,
           };
+    },
+    flyTo(longitude, latitude) {
+      mapRef.current?.getMap()?.jumpTo({ center: [longitude, latitude], zoom: 15 });
     },
   }));
 

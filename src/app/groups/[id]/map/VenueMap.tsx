@@ -1,15 +1,20 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import Map, { type MapRef } from "react-map-gl/maplibre";
-import type { GeoJSONSource, MapLayerMouseEvent } from "maplibre-gl";
+import Map, { Source, Layer, type MapLayerMouseEvent } from "react-map-gl/maplibre";
+import type { GeoJSONSource } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { createClient } from "@/lib/supabase/client";
+import { getGoogleMapsUrl, getYelpSearchUrl } from "../venues/externalLinks";
 import type { MapVenue } from "./page";
 
 const MAP_STYLE_URL =
   process.env.NEXT_PUBLIC_MAP_STYLE_URL ?? "https://tiles.openfreemap.org/styles/liberty";
+
+// Layers whose features are queried on click/hover — passed to <Map> so
+// react-map-gl handles feature-picking and hover state for us.
+const INTERACTIVE_LAYER_IDS = ["clusters", "unclustered-point"];
 
 type VenueEntry = {
   id: string;
@@ -19,8 +24,8 @@ type VenueEntry = {
 };
 
 // Deliberately not typed against the ambient GeoJSON namespace as the source
-// of truth (only cast to it at the addSource/setData call sites, where
-// maplibre-gl's TS signatures require it) — keeps this local shape stable
+// of truth (only cast to it at the <Source data={...}> prop, where
+// react-map-gl's TS signature requires it) — keeps this local shape stable
 // even if the ambient types resolve differently than expected.
 type VenueFeatureCollection = {
   type: "FeatureCollection";
@@ -43,7 +48,7 @@ function venuesToGeoJSON(venues: MapVenue[]): VenueFeatureCollection {
 }
 
 export function VenueMap({ groupId, venues }: { groupId: string; venues: MapVenue[] }) {
-  const mapRef = useRef<MapRef>(null);
+  const [cursor, setCursor] = useState("");
   const [selectedVenue, setSelectedVenue] = useState<MapVenue | null>(null);
   const [entries, setEntries] = useState<VenueEntry[] | null>(null);
   const [loadingEntries, setLoadingEntries] = useState(false);
@@ -61,96 +66,82 @@ export function VenueMap({ groupId, venues }: { groupId: string; venues: MapVenu
     setLoadingEntries(false);
   }
 
-  function handleLoad() {
-    const map = mapRef.current?.getMap();
-    if (!map) return;
+  async function handleClick(e: MapLayerMouseEvent) {
+    const feature = e.features?.[0];
+    if (!feature) return;
 
-    // Globe projection must be set after style load, not before.
-    map.setProjection({ type: "globe" });
+    const props = feature.properties as { cluster_id?: number; id?: string };
 
-    map.addSource("venues", {
-      type: "geojson",
-      data: venuesToGeoJSON(venues) as unknown as GeoJSON.FeatureCollection,
-      cluster: true,
-      clusterMaxZoom: 14,
-      clusterRadius: 50,
-    });
-
-    map.addLayer({
-      id: "clusters",
-      type: "circle",
-      source: "venues",
-      filter: ["has", "point_count"],
-      paint: {
-        "circle-color": "#4f46e5",
-        "circle-radius": ["step", ["get", "point_count"], 16, 10, 20, 25, 26],
-        "circle-opacity": 0.85,
-      },
-    });
-
-    map.addLayer({
-      id: "cluster-count",
-      type: "symbol",
-      source: "venues",
-      filter: ["has", "point_count"],
-      layout: { "text-field": "{point_count_abbreviated}", "text-size": 14 },
-      paint: { "text-color": "#ffffff" },
-    });
-
-    map.addLayer({
-      id: "unclustered-point",
-      type: "circle",
-      source: "venues",
-      filter: ["!", ["has", "point_count"]],
-      paint: {
-        "circle-color": "#4f46e5",
-        "circle-radius": 8,
-        "circle-stroke-width": 2,
-        "circle-stroke-color": "#ffffff",
-      },
-    });
-
-    map.on("click", "clusters", async (e: MapLayerMouseEvent) => {
-      const features = map.queryRenderedFeatures(e.point, { layers: ["clusters"] });
-      const clusterId = features[0]?.properties?.cluster_id;
-      if (clusterId === undefined) return;
-
+    // Cluster bubbles carry a cluster_id (added by supercluster); individual
+    // venue points carry the plain venue id set in venuesToGeoJSON.
+    if (props.cluster_id !== undefined) {
+      const map = e.target;
       const source = map.getSource("venues") as GeoJSONSource;
-      const zoom = await source.getClusterExpansionZoom(clusterId);
-      const geometry = features[0].geometry as { type: "Point"; coordinates: [number, number] };
+      const zoom = await source.getClusterExpansionZoom(props.cluster_id);
+      const geometry = feature.geometry as { type: "Point"; coordinates: [number, number] };
       map.easeTo({ center: geometry.coordinates, zoom });
-    });
+      return;
+    }
 
-    map.on("click", "unclustered-point", (e: MapLayerMouseEvent) => {
-      const feature = e.features?.[0];
-      if (!feature) return;
-      const props = feature.properties as { id: string };
+    if (props.id) {
       const venue = venues.find((v) => v.id === props.id);
       if (venue) selectVenue(venue);
-    });
-
-    map.on("mouseenter", "clusters", () => (map.getCanvas().style.cursor = "pointer"));
-    map.on("mouseleave", "clusters", () => (map.getCanvas().style.cursor = ""));
-    map.on("mouseenter", "unclustered-point", () => (map.getCanvas().style.cursor = "pointer"));
-    map.on("mouseleave", "unclustered-point", () => (map.getCanvas().style.cursor = ""));
+    }
   }
 
-  // Keep the source's data in sync if `venues` changes after initial load
-  // (e.g. router.refresh() after a venue is added/edited/deleted elsewhere).
-  useEffect(() => {
-    const source = mapRef.current?.getMap()?.getSource("venues") as GeoJSONSource | undefined;
-    source?.setData(venuesToGeoJSON(venues) as unknown as GeoJSON.FeatureCollection);
-  }, [venues]);
+  const geojson = venuesToGeoJSON(venues);
 
   return (
     <div className="relative h-[70vh] w-full overflow-hidden rounded-lg border border-gray-300">
       <Map
-        ref={mapRef}
-        onLoad={handleLoad}
         initialViewState={{ longitude: -98.5795, latitude: 39.8283, zoom: 1.5 }}
         mapStyle={MAP_STYLE_URL}
+        projection="globe"
+        interactiveLayerIds={INTERACTIVE_LAYER_IDS}
+        cursor={cursor}
+        onMouseEnter={() => setCursor("pointer")}
+        onMouseLeave={() => setCursor("")}
+        onClick={handleClick}
         style={{ width: "100%", height: "100%" }}
-      />
+      >
+        <Source
+          id="venues"
+          type="geojson"
+          data={geojson as unknown as GeoJSON.FeatureCollection}
+          cluster={true}
+          clusterMaxZoom={14}
+          clusterRadius={50}
+        >
+          <Layer
+            id="clusters"
+            type="circle"
+            filter={["has", "point_count"]}
+            paint={{
+              "circle-color": "#4f46e5",
+              "circle-radius": ["step", ["get", "point_count"], 16, 10, 20, 25, 26],
+              "circle-opacity": 0.85,
+            }}
+          />
+          <Layer
+            id="cluster-count"
+            type="symbol"
+            filter={["has", "point_count"]}
+            layout={{ "text-field": "{point_count_abbreviated}", "text-size": 14 }}
+            paint={{ "text-color": "#ffffff" }}
+          />
+          <Layer
+            id="unclustered-point"
+            type="circle"
+            filter={["!", ["has", "point_count"]]}
+            paint={{
+              "circle-color": "#4f46e5",
+              "circle-radius": 8,
+              "circle-stroke-width": 2,
+              "circle-stroke-color": "#ffffff",
+            }}
+          />
+        </Source>
+      </Map>
 
       {selectedVenue && (
         <div className="absolute inset-x-0 bottom-0 max-h-[60%] overflow-y-auto rounded-t-2xl border-t border-gray-300 bg-white p-4 shadow-lg">
@@ -160,6 +151,24 @@ export function VenueMap({ groupId, venues }: { groupId: string; venues: MapVenu
               {selectedVenue.address && (
                 <p className="text-sm text-gray-500">{selectedVenue.address}</p>
               )}
+              <div className="mt-1 flex gap-3">
+                <a
+                  href={getGoogleMapsUrl(selectedVenue.latitude, selectedVenue.longitude)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs font-medium text-indigo-600 hover:text-indigo-500"
+                >
+                  Google Maps
+                </a>
+                <a
+                  href={getYelpSearchUrl(selectedVenue.name, selectedVenue.address)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs font-medium text-indigo-600 hover:text-indigo-500"
+                >
+                  Yelp
+                </a>
+              </div>
             </div>
             <button
               type="button"

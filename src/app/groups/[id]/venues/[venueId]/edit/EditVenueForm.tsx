@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { VenueLocationPicker, type VenueLocationPickerHandle } from "../../VenueLocationPicker";
+import { VenueNameInput, type VenueSuggestion } from "../../VenueNameInput";
 import type { Venue } from "../../page";
 
 export function EditVenueForm({ venue, groupId }: { venue: Venue; groupId: string }) {
@@ -13,6 +14,20 @@ export function EditVenueForm({ venue, groupId }: { venue: Venue; groupId: strin
   const [address, setAddress] = useState(venue.address ?? "");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  function handleSelectSuggestion(suggestion: VenueSuggestion) {
+    setName(suggestion.name);
+    setAddress(suggestion.address);
+    pickerRef.current?.flyTo(suggestion.longitude, suggestion.latitude);
+  }
+
+  function handleSelectAddressSuggestion(suggestion: VenueSuggestion) {
+    setAddress(suggestion.address);
+    if (!name.trim() && suggestion.name) {
+      setName(suggestion.name);
+    }
+    pickerRef.current?.flyTo(suggestion.longitude, suggestion.latitude);
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -46,26 +61,19 @@ export function EditVenueForm({ venue, groupId }: { venue: Venue; groupId: strin
         <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
           Name
         </label>
-        <input
-          id="name"
-          type="text"
-          required
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="w-full rounded-lg border border-gray-300 px-4 py-3 text-base focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-        />
+        <VenueNameInput value={name} onChange={setName} onSelect={handleSelectSuggestion} />
       </div>
 
       <div>
         <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
           Address (optional)
         </label>
-        <input
+        <VenueNameInput
           id="address"
-          type="text"
+          required={false}
           value={address}
-          onChange={(e) => setAddress(e.target.value)}
-          className="w-full rounded-lg border border-gray-300 px-4 py-3 text-base focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          onChange={setAddress}
+          onSelect={handleSelectAddressSuggestion}
         />
       </div>
 
