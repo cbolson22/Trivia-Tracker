@@ -5,13 +5,24 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Entry } from "../../page";
 
-export function EditEntryForm({ entry, groupId }: { entry: Entry; groupId: string }) {
+type Venue = { id: string; name: string };
+
+export function EditEntryForm({
+  entry,
+  groupId,
+  venues,
+}: {
+  entry: Entry;
+  groupId: string;
+  venues: Venue[];
+}) {
   const router = useRouter();
   const [question, setQuestion] = useState(entry.question);
   const [answer, setAnswer] = useState(entry.answer);
   const [category, setCategory] = useState(entry.category ?? "");
   const [source, setSource] = useState(entry.source ?? "");
   const [heardOn, setHeardOn] = useState(entry.heard_on ?? "");
+  const [selectedVenueId, setSelectedVenueId] = useState(entry.venue_id ?? "");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -29,6 +40,7 @@ export function EditEntryForm({ entry, groupId }: { entry: Entry; groupId: strin
         category: category || null,
         source: source || null,
         heard_on: heardOn || null,
+        venue_id: selectedVenueId || null,
       })
       .eq("id", entry.id);
 
@@ -44,6 +56,25 @@ export function EditEntryForm({ entry, groupId }: { entry: Entry; groupId: strin
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {venues.length > 0 && (
+        <div>
+          <label htmlFor="venue" className="block text-sm font-medium text-gray-700 mb-1">
+            Venue (optional)
+          </label>
+          <select
+            id="venue"
+            value={selectedVenueId}
+            onChange={(e) => setSelectedVenueId(e.target.value)}
+            className="w-full rounded-lg border border-gray-300 px-4 py-3 text-base focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          >
+            <option value="">No venue</option>
+            {venues.map((v) => (
+              <option key={v.id} value={v.id}>{v.name}</option>
+            ))}
+          </select>
+        </div>
+      )}
+
       <div>
         <label htmlFor="question" className="block text-sm font-medium text-gray-700 mb-1">
           Question

@@ -26,11 +26,17 @@ export default async function EditEntryPage({
 
   const { data: entry } = await supabase
     .from("entries")
-    .select("id, group_id, author_id, question, answer, category, source, heard_on, created_at")
+    .select("id, group_id, author_id, question, answer, category, source, heard_on, venue_id, created_at")
     .eq("id", entryId)
     .single();
 
   if (!entry) notFound();
+
+  const { data: venues } = await supabase
+    .from("venues")
+    .select("id, name")
+    .eq("group_id", groupId)
+    .order("name");
 
   // UX-only check: the real enforcement is entries_update_author_or_permitted
   // and entries_delete_author_or_permitted in Postgres, which reject the
@@ -45,7 +51,7 @@ export default async function EditEntryPage({
         </h1>
 
         {canEdit ? (
-          <EditEntryForm entry={entry} groupId={groupId} />
+          <EditEntryForm entry={entry} groupId={groupId} venues={venues ?? []} />
         ) : (
           <div className="space-y-4">
             <div>

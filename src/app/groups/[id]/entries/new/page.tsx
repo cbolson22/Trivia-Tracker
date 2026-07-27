@@ -5,13 +5,16 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
+type Venue = { id: string; name: string };
+
 function NewEntryForm() {
   const router = useRouter();
   const { id: groupId } = useParams<{ id: string }>();
   const searchParams = useSearchParams();
-  const venueId = searchParams.get("venue_id");
+  const initialVenueId = searchParams.get("venue_id") ?? "";
 
-  const [venueName, setVenueName] = useState<string | null>(null);
+  const [venues, setVenues] = useState<Venue[]>([]);
+  const [selectedVenueId, setSelectedVenueId] = useState(initialVenueId);
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
   const [category, setCategory] = useState("");
@@ -21,15 +24,14 @@ function NewEntryForm() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!venueId) return;
     const supabase = createClient();
     supabase
       .from("venues")
-      .select("name")
-      .eq("id", venueId)
-      .single()
-      .then(({ data }) => setVenueName((data as { name: string } | null)?.name ?? null));
-  }, [venueId]);
+      .select("id, name")
+      .eq("group_id", groupId)
+      .order("name")
+      .then(({ data }) => setVenues((data as Venue[]) ?? []));
+  }, [groupId]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -44,7 +46,7 @@ function NewEntryForm() {
       category: category || null,
       source: source || null,
       heard_on: heardOn || null,
-      venue_id: venueId || null,
+      venue_id: selectedVenueId || null,
     });
 
     if (error) {
@@ -59,16 +61,30 @@ function NewEntryForm() {
 
   return (
     <div className="w-full max-w-sm">
-      <h1 className="mb-2 text-center text-2xl font-bold text-gray-900">
+      <h1 className="mb-6 text-center text-2xl font-bold text-gray-900">
         Add an entry
       </h1>
-      {venueName && (
-        <p className="mb-6 text-center text-sm text-gray-500">
-          Logging for: <span className="font-medium text-gray-700">{venueName}</span>
-        </p>
-      )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        {venues.length > 0 && (
+          <div>
+            <label htmlFor="venue" className="block text-sm font-medium text-gray-700 mb-1">
+              Venue (optional)
+            </label>
+            <select
+              id="venue"
+              value={selectedVenueId}
+              onChange={(e) => setSelectedVenueId(e.target.value)}
+              className="w-full rounded-lg border border-gray-300 px-4 py-3 text-base focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            >
+              <option value="">No venue</option>
+              {venues.map((v) => (
+                <option key={v.id} value={v.id}>{v.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
         <div>
           <label htmlFor="question" className="block text-sm font-medium text-gray-700 mb-1">
             Question

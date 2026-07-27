@@ -12,6 +12,7 @@ export type Entry = {
   category: string | null;
   source: string | null;
   heard_on: string | null;
+  venue_id: string | null;
   created_at: string;
 };
 
