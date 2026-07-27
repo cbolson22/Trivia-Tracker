@@ -35,12 +35,21 @@ export function VenueNameInput({
   value,
   onChange,
   onSelect,
+  onAutoLocate,
 }: {
   id?: string;
   required?: boolean;
   value: string;
   onChange: (value: string) => void;
   onSelect: (suggestion: VenueSuggestion) => void;
+  // Fired automatically as soon as a search returns a top match — no click
+  // required. Unlike onSelect, this must NOT rewrite the input's own text
+  // (the user's typed value stays authoritative); it should only reposition
+  // the pin. Only pass this for fields where matches are high-confidence
+  // (e.g. structured addresses) — omit it for fuzzy name search, where an
+  // auto-applied wrong match (e.g. a same-named place on the other side of
+  // the world) would be worse than doing nothing.
+  onAutoLocate?: (suggestion: VenueSuggestion) => void;
 }) {
   const [suggestions, setSuggestions] = useState<VenueSuggestion[]>([]);
   const [open, setOpen] = useState(false);
@@ -79,6 +88,9 @@ export function VenueNameInput({
         }));
         setSuggestions(results);
         setOpen(results.length > 0);
+        if (results.length > 0) {
+          onAutoLocate?.(results[0]);
+        }
       } catch {
         // Aborted or network error — leave any existing suggestions alone.
       }

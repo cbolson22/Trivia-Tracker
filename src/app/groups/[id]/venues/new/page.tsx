@@ -30,6 +30,10 @@ export default function NewVenuePage() {
     pickerRef.current?.flyTo(suggestion.longitude, suggestion.latitude);
   }
 
+  function handleAutoLocateAddress(suggestion: VenueSuggestion) {
+    pickerRef.current?.flyTo(suggestion.longitude, suggestion.latitude);
+  }
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
@@ -83,6 +87,7 @@ export default function NewVenuePage() {
               value={address}
               onChange={setAddress}
               onSelect={handleSelectAddressSuggestion}
+              onAutoLocate={handleAutoLocateAddress}
             />
           </div>
 
